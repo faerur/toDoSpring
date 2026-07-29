@@ -25,16 +25,18 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "users")
 @AllArgsConstructor
 @NoArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@Setter
 public class User implements UserDetails {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.AUTO)
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   @EqualsAndHashCode.Include
   private Long id;
 
@@ -116,6 +118,10 @@ public class User implements UserDetails {
 
   public void setAuthorities(List<Authority> authorities) {
     this.authorities = authorities;
+  }
+
+  public Date getCreateAt() {
+    return createAt;
   }
 
 }

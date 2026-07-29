@@ -1,67 +1,80 @@
-// package br.com.udemy.todos.api.service;
+package br.com.udemy.todos.api.service;
 
-// import org.springframework.stereotype.Service;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
-// import br.com.udemy.todos.api.model.entity.User;
-// import jakarta.transaction.Transactional;
-// import lombok.AllArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-// @Service
-// @AllArgsConstructor
-// public class AuthenticationServiceImpl implements AuthenticationService {
+import br.com.udemy.todos.api.model.entity.Authority;
+import br.com.udemy.todos.api.model.entity.User;
+import br.com.udemy.todos.api.repository.UserRepository;
+import br.com.udemy.todos.api.request.AuthenticationRequest;
+import br.com.udemy.todos.api.request.RegisterRequest;
+import br.com.udemy.todos.api.response.AuthenticationResponse;
 
-// private final JwtService jwtService;
+import lombok.AllArgsConstructor;
 
-// @Override
-// @Transactional
-// public void register(RegisterRequest input) throws Exception {
-// if (isEmailTaken(input.getEmail())) {
-// throw new Exception("Email already taken");
-// }
-// User user = buildNewUser(input);
-// userRepository.save(user);
-// }
+@AllArgsConstructor
+@Service
+public class AuthenticationServiceImpl implements AuthenticationService {
 
-// @Override
-// @Transactional(readOnly = true)
-// public AuthenticationResponse login(AuthenticationRequest request) {
+  private final UserRepository userRepository;
+  private final PasswordEncoder passwordEncoder;
+  private final AuthenticationManager authenticationManager;
+  private final JwtService jwtService;
 
-// authenticationManager.authenticate(
-// new UsernamePasswordAuthenticationToken(request.getEmail(),
-// request.getPassword()));
+  @Override
+  @Transactional
+  public void register(RegisterRequest input) throws Exception {
+    if (isEmailTaken(input.getEmail())) {
+      throw new Exception("Email already taken");
+    }
+    User user = buildNewUser(input);
+    userRepository.save(user);
+  }
 
-// User user = userRepository.findByEmail(request.getEmail())
-// .orElseThrow(() -> new IllegalArgumentException("Invalid email or
-// password"));
+  @Override
+  @Transactional(readOnly = true)
+  public AuthenticationResponse login(AuthenticationRequest request) {
 
-// String jwtToken = jwtService.generateToken(new HashMap<>(), user);
+    authenticationManager.authenticate(
+        new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
-// return new AuthenticationResponse(jwtToken);
-// }
+    User user = userRepository.findByEmail(request.getEmail())
+        .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
 
-// private boolean isEmailTaken(String email) {
-// return userRepository.findByEmail(email).isPresent();
-// }
+    String jwtToken = jwtService.generateToken(new HashMap<>(), user);
 
-// private User buildNewUser(RegisterRequest input) {
-// User user = new User();
-// user.setId(0);
-// user.setFirstName(input.getFirstName());
-// user.setLastName(input.getLastName());
-// user.setEmail(input.getEmail());
-// user.setPassword(passwordEncoder.encode(input.getPassword()));
-// user.setAuthorities(initialAuthority());
-// return user;
-// }
+    return new AuthenticationResponse(jwtToken);
+  }
 
-// private List<Authority> initialAuthority() {
-// boolean isFirstUser = userRepository.count() == 0;
-// List<Authority> authorities = new ArrayList<>();
-// authorities.add(new Authority("ROLE_EMPLOYEE"));
-// if (isFirstUser) {
-// authorities.add(new Authority("ROLE_ADMIN"));
-// }
-// return authorities;
-// }
+  private boolean isEmailTaken(String email) {
+    return userRepository.findByEmail(email).isPresent();
+  }
 
-// }
+  private User buildNewUser(RegisterRequest input) {
+    User user = new User();
+    user.setFirstName(input.getFirstName());
+    user.setLastName(input.getLastName());
+    user.setEmail(input.getEmail());
+    user.setPassword(passwordEncoder.encode(input.getPassword()));
+    user.setAuthorities(initialAuthority());
+    return user;
+  }
+
+  private List<Authority> initialAuthority() {
+    boolean isFirstUser = userRepository.count() == 0;
+    List<Authority> authorities = new ArrayList<>();
+    authorities.add(new Authority("ROLE_EMPLOYEE"));
+    if (isFirstUser) {
+      authorities.add(new Authority("ROLE_ADMIN"));
+    }
+    return authorities;
+  }
+
+}

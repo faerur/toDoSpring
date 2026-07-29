@@ -22,21 +22,7 @@ public class JwtServiceImpl implements JwtService {
   private String SECRET_KEY;
 
   @Value("${spring.jwt.expiration}")
-  private Long JWT_EXPIRATION;
-
-  @Override
-  public String generateToken(Map<String, Object> claims, UserDetails userDetails) {
-    return Jwts.builder().claims(claims).subject(userDetails.getUsername())
-        .issuedAt(new Date(System.currentTimeMillis()))
-        .expiration(new Date(System.currentTimeMillis() + JWT_EXPIRATION)).signWith(getSigningKey(), Jwts.SIG.HS256)
-        .compact();
-  }
-
-  private SecretKey getSigningKey() {
-    byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
-    return Keys.hmacShaKeyFor(keyBytes);
-
-  }
+  private long JWT_EXPIRATION;
 
   @Override
   public String extractUsername(String token) {
@@ -49,7 +35,11 @@ public class JwtServiceImpl implements JwtService {
   }
 
   private Claims extractAllClaims(String token) {
-    return Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token).getPayload();
+    return Jwts.parser()
+        .verifyWith(getSigningKey())
+        .build()
+        .parseSignedClaims(token)
+        .getPayload();
   }
 
   @Override
@@ -65,4 +55,21 @@ public class JwtServiceImpl implements JwtService {
   private Date extractExpiration(String token) {
     return extractClaim(token, Claims::getExpiration);
   }
+
+  @Override
+  public String generateToken(Map<String, Object> claims, UserDetails userDetails) {
+    return Jwts.builder()
+        .claims(claims)
+        .subject(userDetails.getUsername())
+        .issuedAt(new Date(System.currentTimeMillis()))
+        .expiration(new Date(System.currentTimeMillis() + JWT_EXPIRATION))
+        .signWith(getSigningKey(), Jwts.SIG.HS256)
+        .compact();
+  }
+
+  private SecretKey getSigningKey() {
+    byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
+    return Keys.hmacShaKeyFor(keyBytes);
+  }
+
 }
